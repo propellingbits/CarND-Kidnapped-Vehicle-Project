@@ -15,9 +15,6 @@
 #include "map.h"
 #define _USE_MATH_DEFINES
 #include <cmath>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 using namespace std;
 static default_random_engine gen;
 
@@ -181,9 +178,10 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double std_y = std_landmark[1];
 
 			long double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(p_x - m_x, 2) / (2 * pow(std_x, 2)) + (pow(p_y - m_y, 2) / (2 * pow(std_y, 2)))));
+			//long double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(m_x - p_x, 2) / (2 * pow(std_x, 2)) + (pow(m_y - p_y, 2) / (2 * pow(std_y, 2)))));
 			//if (fabs(mwg_w) > 0.001)
 			//{
-				particles[i].weight *= mwg_w;
+			p.weight = particles[i].weight *= mwg_w;
 			//}
 		}
 		if (p.weight > 0)
