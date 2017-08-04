@@ -62,15 +62,15 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	for (int i = 0; i < num_particles; i++)
 	{
 		Particle p = particles[i];
-		if (yaw_rate > 0) { //also test for fabs(yaw_rate) > 0.001
-			p.x += (velocity / yaw_rate)*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta));
-			p.y += (velocity / yaw_rate)*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t));
-			p.theta += yaw_rate*delta_t;
+		if (yaw_rate < 0.001) {
+			p.x += velocity*delta_t*cos(p.theta);
+			p.y += velocity*delta_t*sin(p.theta);			
 		}
 		else
 		{
-			p.x += velocity*delta_t*cos(p.theta);
-			p.y += velocity*delta_t*sin(p.theta);			
+			p.x += (velocity / yaw_rate)*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta));
+			p.y += (velocity / yaw_rate)*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t));
+			p.theta += yaw_rate*delta_t;
 		}
 
 		normal_distribution<double> noise_x(p.x, std_pos[0]);
