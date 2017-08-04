@@ -58,11 +58,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 	// std_pos = GPS measurement uncertainty
 	// eq when yaw_rate is 0 https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/2c318113-724b-4f9f-860c-cb334e6e4ad7/lessons/5d3e95df-f402-4b22-b8ba-ec0d9257666a/concepts/ff7658c9-6edd-498b-b066-1578ec3f97aa
-
-	normal_distribution<double> noise_x(0, std_pos[0]);
-	normal_distribution<double> noise_y(0, std_pos[1]);
-	normal_distribution<double> noise_theta(0, std_pos[2]);
-
+	
 	for (int i = 0; i < num_particles; i++)
 	{
 		Particle p = particles[i];
@@ -74,8 +70,13 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 		else
 		{
 			p.x += velocity*delta_t*cos(p.theta);
-			p.y += velocity*delta_t*(sin(p.theta));
+			p.y += velocity*delta_t*sin(p.theta);			
 		}
+
+		normal_distribution<double> noise_x(p.x, std_pos[0]);
+		normal_distribution<double> noise_y(p.y, std_pos[1]);
+		normal_distribution<double> noise_theta(p.theta, std_pos[2]);
+
 		p.x += noise_x(gen);
 		p.y += noise_y(gen);
 		p.theta += noise_theta(gen);
