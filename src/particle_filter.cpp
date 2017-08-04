@@ -144,14 +144,22 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 		}
 
 		vector<LandmarkObs> transformedLandmarks;
+		LandmarkObs obs;
 		for (int o = 0; o < observations.size(); o++)
 		{
+			LandmarkObs trans_obs;
+			obs = observations[o];
 			//converting from vehicle to map co-ordinates
-			double x = observations[o].x * cos(p.theta) - observations[o].y * sin(p.theta) + p.x;
-			double y = observations[o].x * sin(p.theta) - observations[o].y * cos(p.theta) + p.y;
-			transformedLandmarks.push_back(LandmarkObs{ observations[o].id, x, y });
-		}
+			/*trans_obs.x = obs.x * cos(p.theta) - obs.y * sin(p.theta) + p.x;
+			trans_obs.y = obs.x * sin(p.theta) - obs.y * cos(p.theta) + p.y;
+			trans_obs.x = p.x + (obs.x * cos(p.theta) - obs.y * sin(p.theta));
+			trans_obs.y = p.y + (obs.x * sin(p.theta) - obs.y * cos(p.theta));*/
 
+			trans_obs.x = p.x + (obs.x * cos(p.theta) - obs.y * sin(p.theta));
+			trans_obs.y = p.y + (obs.x * sin(p.theta) + obs.y * cos(p.theta));
+			transformedLandmarks.push_back(trans_obs);
+		}
+		particles[i].weight = 1.0;
 		dataAssociation(sensedLandmarks, transformedLandmarks);
 
 		for (int t = 0; t < transformedLandmarks.size(); t++)
@@ -172,8 +180,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double std_x = std_landmark[0];
 			double std_y = std_landmark[1];
 
-			double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(p_x - m_x, 2) / (2 * pow(std_x, 2)) + (pow(p_y - m_y, 2) / (2 * pow(std_y, 2)))));
-			particles[i].weight *= mwg_w;			
+			long double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(p_x - m_x, 2) / (2 * pow(std_x, 2)) + (pow(p_y - m_y, 2) / (2 * pow(std_y, 2)))));
+			//if (fabs(mwg_w) > 0.001)
+			//{
+				particles[i].weight *= mwg_w;
+			//}
+		}
+		if (p.weight > 0)
+		{
+			weights[i] = p.weight;
 		}
 	}
 }
