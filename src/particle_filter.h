@@ -18,6 +18,9 @@ struct Particle {
 	double y;
 	double theta;
 	double weight;
+	std::vector<int> associations;
+	std::vector<double> sense_x;
+	std::vector<double> sense_y;
 };
 
 
@@ -94,6 +97,16 @@ public:
 	*   the new set of particles.
 	*/
 	void resample();
+
+	/*
+	 * Set a particles list of associations, along with the associations calculated world x,y coordinates
+	 * This can be a very useful debugging tool to make sure transformations are correct and assocations correctly connected
+	 */
+	 Particle SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y);
+	 
+	 std::string getAssociations(Particle best);
+	 std::string getSenseX(Particle best);
+	 std::string getSenseY(Particle best);
 
 	/*
 	* mean_error Gives the weighted average absolute error for all particles.
