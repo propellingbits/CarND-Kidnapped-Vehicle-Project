@@ -24,23 +24,23 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 	
-	num_particles = 500;	
+	num_particles = 100;	
 	// normal (Gaussian) distributions.
-	normal_distribution<double> dist_x(x, std[0]);
-	normal_distribution<double> dist_y(y, std[1]);
-	normal_distribution<double> dist_theta(theta, std[2]);
+	normal_distribution<double> dist_x(0, std[0]);
+	normal_distribution<double> dist_y(0, std[1]);
+	normal_distribution<double> dist_theta(0, std[2]);
 
 	for (int i = 0; i < num_particles; i++)
 	{
 		Particle pf = Particle();
 		pf.id = i;
-		/*pf.x = x;
+		pf.x = x;
 		pf.y = y;
-		pf.theta = theta;*/
+		pf.theta = theta;
 		pf.weight = 1.0;		
-		pf.x = dist_x(gen);
-		pf.y = dist_y(gen);
-		pf.theta = dist_theta(gen);
+		pf.x += dist_x(gen);
+		pf.y += dist_y(gen);
+		pf.theta += dist_theta(gen);
 		weights.push_back(1.0);
 		particles.push_back(pf);
 	}
@@ -55,29 +55,31 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://www.cplusplus.com/reference/random/default_random_engine/
 	// std_pos = GPS measurement uncertainty
 	// eq when yaw_rate is 0 https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/2c318113-724b-4f9f-860c-cb334e6e4ad7/lessons/5d3e95df-f402-4b22-b8ba-ec0d9257666a/concepts/ff7658c9-6edd-498b-b066-1578ec3f97aa
-	normal_distribution<double> noise_x(0, std_pos[0]);
-	normal_distribution<double> noise_y(0, std_pos[1]);
-	normal_distribution<double> noise_theta(0, std_pos[2]);
+	double std_x, std_y, std_theta; // Standard deviations for x, y, and theta
+    std_x = std_pos[0];
+    std_y = std_pos[1];
+    std_theta = std_pos[2];
 
-	for (int i = 0; i < num_particles; i++)
-	{
-		Particle p = particles[i];
-		if (yaw_rate < 0.001) {
-			p.x += velocity*delta_t*cos(p.theta);
-			p.y += velocity*delta_t*sin(p.theta);			
-		}
-		else
-		{
-			p.x += (velocity / yaw_rate)*(sin(p.theta + yaw_rate*delta_t) - sin(p.theta));
-			p.y += (velocity / yaw_rate)*(cos(p.theta) - cos(p.theta + yaw_rate*delta_t));
-			p.theta += yaw_rate*delta_t;
-		}
-		
-		p.x += noise_x(gen);
-		p.y += noise_y(gen);
-		p.theta += noise_theta(gen);
-		particles[i] = p;
-	}
+
+	// add Gaussian Noise to each measurement
+        // Normal distribution for x, y and theta
+    normal_distribution<double> dist_x(0, std_x);
+    normal_distribution<double> dist_y(0, std_y);
+	normal_distribution<double> dist_theta(0, std_theta);
+
+    for(int i=0; i<num_particles; ++i){
+        Particle *p = &particles[i]; // get address of particle to update
+
+        // use the prediction equations from the Lesson 14
+        p->x = p->x + (velocity/yaw_rate) * (sin(p->theta + yaw_rate*delta_t) - sin(p->theta));
+        p->y = p->y + (velocity/yaw_rate) * (cos(p->theta) - cos(p->theta + yaw_rate*delta_t));
+        p->theta = p->theta + (yaw_rate*delta_t);
+
+        // update the particle attributes
+        p->x += dist_x(gen);
+        p->y += dist_y(gen);
+        p->theta += dist_theta(gen);
+    }
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -86,11 +88,11 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
 	int mapId = 0;
-	double nearest_ngbr_dist = numeric_limits<double>::max();
-
+	
 	for (int i = 0; i < observations.size(); i++)
 	{
 		LandmarkObs obs = observations[i];
+		double nearest_ngbr_dist = numeric_limits<double>::max();
 
 		for (int j = 0; j < predicted.size(); j++)
 		{
@@ -127,6 +129,7 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	for (int i = 0; i < num_particles; i++)
 	{
 		Particle p = particles[i];
+		
 		double wt = 1.0;
 
 		vector<LandmarkObs> sensedLandmarks; //sensed by sensors
@@ -179,21 +182,28 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 			double std_x = std_landmark[0];
 			double std_y = std_landmark[1];
 
+			float mu_x, mu_y;
+			mu_x = trans_obs.x - p_x;
+			mu_x = (mu_x * mu_x)/(2*std_x*std_x);
+			mu_y = trans_obs.y - p_y;
+			mu_y = (mu_y * mu_y)/(2*std_y*std_y);
 			//long double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(p_x - m_x, 2) / (2 * pow(std_x, 2)) + (pow(p_y - m_y, 2) / (2 * pow(std_y, 2)))));
 			//cout << "mwg_w: " << mwg_w << endl;
 
-			double num = exp(-0.5 * (pow((p_x - m_x), 2) / pow(std_x, 2) + pow((p_y - m_y), 2) / pow(std_y, 2)));
-			double denom = 2 * M_PI * std_x * std_y;
-			wt *= num/denom;
+		    double mwg_w = exp(-1 * mu_x - mu_y) / (2 * M_PI * std_x * std_y);
+			
+			//double num = exp(-0.5 * (pow((p_x - m_x), 2) / pow(std_x, 2) + pow((p_y - m_y), 2) / pow(std_y, 2)));
+			//double denom = 2 * M_PI * std_x * std_y;
+			wt *= mwg_w;
 			cout << "weight: " << wt << endl;
 		}
 			//long double mwg_w = (1 / (2 * M_PI*std_x*std_y)) * exp(-(pow(m_x - p_x, 2) / (2 * pow(std_x, 2)) + (pow(m_y - p_y, 2) / (2 * pow(std_y, 2)))));
 			//if (fabs(mwg_w) > 0.001)
 			//{
-			p.weight = particles[i].weight *= wt;
+			particles[i].weight = wt;
 			//}
 
-			weights[i] = p.weight;
+			weights[i] = wt;
 		
 	}
 }
