@@ -70,10 +70,17 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     for(int i=0; i<num_particles; ++i){
         Particle *p = &particles[i]; // get address of particle to update
 
-        // use the prediction equations from the Lesson 14
-        p->x = p->x + (velocity/yaw_rate) * (sin(p->theta + yaw_rate*delta_t) - sin(p->theta));
-        p->y = p->y + (velocity/yaw_rate) * (cos(p->theta) - cos(p->theta + yaw_rate*delta_t));
-        p->theta = p->theta + (yaw_rate*delta_t);
+		// use the prediction equations from the Lesson 14
+		if(yaw_rate != 0)
+		{
+			p->x = p->x + (velocity/yaw_rate) * (sin(p->theta + yaw_rate*delta_t) - sin(p->theta));
+			p->y = p->y + (velocity/yaw_rate) * (cos(p->theta) - cos(p->theta + yaw_rate*delta_t));
+			p->theta = p->theta + (yaw_rate*delta_t);
+		}
+		else {
+			p->x = p->x + (velocity * cos(p->theta) * delta_t);
+			p->y = p->y + (velocity * sin(p->theta) * delta_t);
+		}
 
         // update the particle attributes
         p->x += dist_x(gen);
